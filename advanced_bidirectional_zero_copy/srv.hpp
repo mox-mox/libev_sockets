@@ -60,7 +60,8 @@ class Socket_connection
 	bool read_n(int fd, char* buffer, int size, ev::socket& client_watcher);
 
 	public:
-		Socket_connection(const std::string& socket_path = "./socket");
+		//Socket_connection(const std::string& socket_path = "./socket");
+		Socket_connection(const std::string& socket_path = "\0hidden");
 		void operator()(void);
 		void socket_watcher_cb(ev::socket& socket_watcher, int revents);
 		void client_watcher_cb(ev::socket& socket_watcher, int revents);

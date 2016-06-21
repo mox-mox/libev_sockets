@@ -10,8 +10,8 @@
 #include <cstring>
 #include <bitset>
 
-const std::string socket_path = "./socket";
-
+//const std::string socket_path = "./socket";
+constexpr auto socket_path = "\0hidden";
 
 
 
