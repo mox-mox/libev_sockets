@@ -128,7 +128,7 @@ void write_n(int fd, char buffer[], int size)	// Write exactly size bytes
 
 
 //{{{
-void socket_cb(ev::socket& w, int revent)
+void socket_write_cb(ev::socket& w, int revent)
 {
 	(void) revent;
 	if(w.write_data.empty())
@@ -156,6 +156,33 @@ void socket_stat_cb(ev::stat& w, int revent)
 
 
 
+//{{{
+constexpr unsigned int bufferlength = 50;
+void socket_read_cb(ev::socket& w, int revent)
+{
+	(void) revent;
+	std::string buffer(bufferlength, '\0');
+
+		int n;
+		switch((n=read(w.fd, &buffer[0], bufferlength)))
+		{
+			case -1:
+				throw std::runtime_error("Read error on the connection using fd." + std::to_string(w.fd) + ".");
+			case  0:
+				std::cout<<"Received EOF (Client has closed the connection)."<<std::endl;
+				w.stop();
+				return;
+			default:
+				std::cout<<"Received: |"<<buffer<<"|"<<std::endl;
+		}
+}
+//}}}
+
+
+
+
+
+
 
 
 
@@ -165,8 +192,11 @@ int main(void)
 
 	//{{{ Standard Unix socket creation
 
-	ev::socket socket_watcher(socket(AF_UNIX, SOCK_STREAM, 0), ev::WRITE, loop);
-	socket_watcher.set<socket_cb>(nullptr);
+	ev::socket socket_watcher_write(socket(AF_UNIX, SOCK_STREAM, 0), ev::WRITE, loop);
+	ev::socket socket_watcher_read(socket_watcher_write.fd, ev::READ, loop);
+
+	socket_watcher_write.set<socket_write_cb>(nullptr);
+	socket_watcher_read.set<socket_read_cb>(nullptr);
 
 	struct sockaddr_un addr;
 	addr.sun_family = AF_UNIX;
@@ -177,16 +207,17 @@ int main(void)
 	}
 	std::strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path)-1);
 
-	if( connect(socket_watcher.fd, (struct sockaddr*) &addr, sizeof(addr)) == -1 )
+	if( connect(socket_watcher_write.fd, (struct sockaddr*) &addr, sizeof(addr)) == -1 )
 	{
 		throw std::runtime_error("Could not connect to socket "+socket_path+".");
 	}
 
-	socket_watcher.start();
+	socket_watcher_write.start();
+	socket_watcher_read.start();
 
 
 	ev::stat socket_stat_watcher(loop);
-	socket_stat_watcher.set<socket_stat_cb>(static_cast<void*>(&socket_watcher));
+	socket_stat_watcher.set<socket_stat_cb>(static_cast<void*>(&socket_watcher_write));
 	socket_stat_watcher.start(socket_path.c_str(), 0);
 
 
@@ -195,7 +226,7 @@ int main(void)
 	//////{{{ Create a libev io watcher to respond to terminal input
 
 	ev::io stdin_watcher(loop);
-	stdin_watcher.set<stdin_cb>(static_cast<void*>(&socket_watcher));
+	stdin_watcher.set<stdin_cb>(static_cast<void*>(&socket_watcher_write));
 	stdin_watcher.set(STDIN_FILENO, ev::READ);
 	stdin_watcher.start();
 	//////}}}

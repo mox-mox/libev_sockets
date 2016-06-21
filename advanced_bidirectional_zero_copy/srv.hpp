@@ -57,7 +57,7 @@ class Socket_connection
 		uint16_t length;
 	}  __attribute__ ((packed));
 
-	bool read_n(int fd, char* buffer, int size);
+	bool read_n(int fd, char* buffer, int size, ev::socket& client_watcher);
 
 	public:
 		Socket_connection(const std::string& socket_path = "./socket");

@@ -52,16 +52,12 @@ void Socket_connection::socket_watcher_cb(ev::socket& socket_watcher, int revent
 
 	ev::socket* client_watcher = new ev::socket(accept(socket_watcher.fd, NULL, NULL), ev::READ, loop);
 	client_watcher->set<Socket_connection, &Socket_connection::client_watcher_cb>(this);
-
-
-
-
 	client_watcher->start();
 	//}}}
 }
 //}}}
 
-bool Socket_connection::read_n(int fd, char buffer[], int size)	// Read exactly size bytes
+bool Socket_connection::read_n(int fd, char buffer[], int size, ev::socket& client_watcher)	// Read exactly size bytes
 {
 	int read_count = 0;
 	while(read_count < size)
@@ -73,6 +69,9 @@ bool Socket_connection::read_n(int fd, char buffer[], int size)	// Read exactly 
 				throw std::runtime_error("Read error on the connection using fd." + std::to_string(socket_watcher.fd) + ".");
 			case  0:
 				std::cout<<"Received EOF (Client has closed the connection)."<<std::endl;
+				close(client_watcher.fd);
+				client_watcher.stop();
+				delete &client_watcher;
 				return true;
 			default:
 				read_count+=n;
@@ -84,32 +83,34 @@ bool Socket_connection::read_n(int fd, char buffer[], int size)	// Read exactly 
 //{{{
 void Socket_connection::client_watcher_cb(ev::socket& client_watcher, int revents)
 {
-	std::cout<<"client_watcher_cb called for fd "<<client_watcher.fd<<"."<<std::endl;
-	(void) revents;
+	std::cout<<"client_watcher_cb("<<revents<<") called for fd "<<client_watcher.fd<<"."<<std::endl;
+	//(void) revents;
 
 	struct header_t header;
 
-	if(read_n(client_watcher.fd, static_cast<char*>(static_cast<void*>(&header)), sizeof(header)))
+	if(read_n(client_watcher.fd, static_cast<char*>(static_cast<void*>(&header)), sizeof(header), client_watcher))
 	{
-				close(client_watcher.fd);
-				client_watcher.stop();
-				delete &client_watcher;
+				return;
 	}
 	std::cout<<header.doodleversion<<", length: "<<header.length<<std::endl;
 
 	std::string buffer(header.length, '\0');
-	if(read_n(client_watcher.fd, &buffer[0], header.length))
+	if(read_n(client_watcher.fd, &buffer[0], header.length, client_watcher))
 	{
-				close(client_watcher.fd);
-				client_watcher.stop();
-				delete &client_watcher;
+				return;
 	}
 	for(unsigned int i=0; i<buffer.length(); i++)
 	{
 		std::cout<<"|"<<static_cast<unsigned int>(buffer[i]);
 	}
-	std::cout<<"|"<<std::endl;
 	std::cout<<"Received: |"<<buffer<<"|"<<std::endl;
+
+	for(int i=buffer.length()-1; i>=0 ; i--) // Reverser the string and send it back
+	{                                        // to test the receive channel of the client
+		write(client_watcher.fd, &buffer[i], 1);
+	}
+
+	std::cout<<"|"<<std::endl;
 	if(buffer=="kill")
 	{
 		std::cout<<"Shutting down"<<std::endl;
@@ -117,8 +118,6 @@ void Socket_connection::client_watcher_cb(ev::socket& client_watcher, int revent
 		unlink(socket_path.c_str());
 		loop.break_loop(ev::ALL);
 	}
-
-	//}
 }
 //}}}
 
