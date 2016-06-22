@@ -2,6 +2,7 @@
 #pragma once
 #include <ev++.h>
 #include <iostream>
+#include <list>
 
 
 
@@ -50,6 +51,7 @@ class Socket_connection
 	const std::string& socket_path;
 	ev::default_loop loop;
 	ev::socket socket_watcher;
+	std::list<ev::socket*> client_watchers;
 
 	struct header_t
 	{

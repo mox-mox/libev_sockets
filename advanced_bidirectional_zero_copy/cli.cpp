@@ -11,7 +11,8 @@
 #include <bitset>
 
 //const std::string socket_path = "./socket";
-constexpr auto socket_path = "\0hidden";
+//constexpr auto socket_path = "\0hidden";
+//constexpr char socket_path[] = "\0hidden";
 
 
 
@@ -182,6 +183,7 @@ void socket_read_cb(ev::socket& w, int revent)
 
 
 
+constexpr char socket_path[] = "\0hidden";
 
 
 
@@ -200,16 +202,43 @@ int main(void)
 
 	struct sockaddr_un addr;
 	addr.sun_family = AF_UNIX;
-	if(socket_path.length() >= sizeof(addr.sun_path)-1)
+
+	for(unsigned int i = 0; i<sizeof(socket_path)-1; i++)
 	{
-		throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
+		std::cout<<"|"<<socket_path[i];
+	}
+	std::cout<<"|"<<std::endl;
+
+
+
+	if(sizeof(socket_path) >= sizeof(addr.sun_path))
+	{
+		//throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
+		//                         "Maximum allowed size is " + std::to_string(sizeof(addr.sun_path)) + "." );
+		throw std::runtime_error("Unix socket path \""  "\" is too long. "
 		                         "Maximum allowed size is " + std::to_string(sizeof(addr.sun_path)) + "." );
 	}
-	std::strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path)-1);
 
-	if( connect(socket_watcher_write.fd, (struct sockaddr*) &addr, sizeof(addr)) == -1 )
+	for(unsigned int i = 0; i<sizeof(socket_path)-1; i++)
 	{
-		throw std::runtime_error("Could not connect to socket "+socket_path+".");
+		addr.sun_path[i] = socket_path[i]; // Need to do this in a loop, because the usual string copying functions break when there is a '\0' character in the string.
+	}
+
+
+
+	std::cout<<"SOCKET: ";
+	for(unsigned int i = 0; i<sizeof(socket_path)-1; i++)
+	{
+		//std::cout<<"|"<<socket_path[i];
+		std::cout<<"|"<<addr.sun_path[i];
+	}
+	std::cout<<"|"<<std::endl;
+
+
+	if( connect(socket_watcher_write.fd, (struct sockaddr*) &addr, sizeof(socket_path)-1) == -1 )
+	{
+		//throw std::runtime_error("Could not connect to socket "+socket_path+".");
+		throw std::runtime_error("Could not connect to socket "".");
 	}
 
 	socket_watcher_write.start();
@@ -218,7 +247,8 @@ int main(void)
 
 	ev::stat socket_stat_watcher(loop);
 	socket_stat_watcher.set<socket_stat_cb>(static_cast<void*>(&socket_watcher_write));
-	socket_stat_watcher.start(socket_path.c_str(), 0);
+	//socket_stat_watcher.start(socket_path.c_str(), 0);
+	socket_stat_watcher.start(socket_path, 0);
 
 
 	//}}}
