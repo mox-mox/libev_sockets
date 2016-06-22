@@ -20,16 +20,6 @@ Socket_connection::Socket_connection(const std::string& socket_path) : socket_pa
 	addr.sun_family = AF_UNIX;
 
 
-	//{{{
-	for(unsigned int i = 0; i<socket_path.length(); i++)
-	{
-		std::cout<<"|"<<socket_path[i];
-	}
-	std::cout<<"|"<<std::endl;
-	//}}}
-
-
-
 	if(socket_path.length() >= sizeof(addr.sun_path)-1)
 	{
 		throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
@@ -39,30 +29,15 @@ Socket_connection::Socket_connection(const std::string& socket_path) : socket_pa
 
 
 	//{{{
-	for(unsigned int i = 0; i<sizeof(socket_path); i++)
+	for(unsigned int i = 0; i<=sizeof(socket_path); i++)
 	{
 		addr.sun_path[i] = socket_path[i]; // Need to do this in a loop, because the usual string copying functions break when there is a '\0' character in the string.
 	}
 	//}}}
 
-	printf("SOCKET: %s\n", addr.sun_path);
+	unlink(&socket_path[0]);
 
-	//{{{
-	for(unsigned int i = 0; i<socket_path.length(); i++)
-	{
-		std::cout<<"|"<<addr.sun_path[i];
-	}
-	std::cout<<"|"<<std::endl;
-	//}}}
-
-
-
-
-	unlink(socket_path.c_str());
-
-	//if( bind(socket_watcher.fd, (struct sockaddr*) &addr, sizeof(addr)) == -1 )
-	std::cout<<"length of the socket path: "<<socket_path.length()<<std::endl;
-	if( bind(socket_watcher.fd, (struct sockaddr*) &addr, socket_path.length()) == -1 )
+	if( bind(socket_watcher.fd, static_cast<struct sockaddr*>(static_cast<void*>(&addr)), socket_path.length()+1) == -1 )
 	{
 		throw std::runtime_error("Could not bind to socket " + socket_path + ".");
 	}
@@ -136,25 +111,21 @@ void Socket_connection::client_watcher_cb(ev::socket& client_watcher, int revent
 	{
 				return;
 	}
-	std::cout<<header.doodleversion<<", length: "<<header.length<<std::endl;
+	std::cout<<header.doodleversion<<", length: "<<header.length<<": ";
 
 	std::string buffer(header.length, '\0');
 	if(read_n(client_watcher.fd, &buffer[0], header.length, client_watcher))
 	{
 				return;
 	}
-	for(unsigned int i=0; i<buffer.length(); i++)
-	{
-		std::cout<<"|"<<static_cast<unsigned int>(buffer[i]);
-	}
-	std::cout<<"Received: |"<<buffer<<"|"<<std::endl;
 
-	for(int i=buffer.length()-1; i>=0 ; i--) // Reverser the string and send it back
+	std::cout<<"\""<<buffer<<"\""<<std::endl;
+
+	for(int i=buffer.length()-1; i>=0 ; i--) // Reverse the string and send it back
 	{                                        // to test the receive channel of the client
 		write(client_watcher.fd, &buffer[i], 1);
 	}
 
-	std::cout<<"|"<<std::endl;
 	if(buffer=="kill")
 	{
 		std::cout<<"Shutting down"<<std::endl;
@@ -165,7 +136,7 @@ void Socket_connection::client_watcher_cb(ev::socket& client_watcher, int revent
 
 		}
 		client_watchers.clear();
-		unlink(socket_path.c_str());
+		unlink(&socket_path[0]);
 		loop.break_loop(ev::ALL);
 	}
 }
@@ -188,9 +159,8 @@ void Socket_connection::operator()(void)
 int main()
 {
 	//Socket_connection connection("./This_is_a_maximum_size_socket_name_A_socket_name_with_more_chars_will_not_fit_in_the_addr_sun_path_field");
-	//Socket_connection connection;
-	std::string sock("\0hidden", sizeof("\0hidden")-1);
-	Socket_connection connection(sock);
+	//Socket_connection connection("./socket");
+	Socket_connection connection;
 	connection();
 
 

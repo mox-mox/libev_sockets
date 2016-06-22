@@ -3,6 +3,7 @@
 #include <ev++.h>
 #include <iostream>
 #include <list>
+#include "socketpath.hpp"
 
 
 
@@ -48,7 +49,7 @@ namespace ev
 
 class Socket_connection
 {
-	const std::string& socket_path;
+	const std::string socket_path;
 	ev::default_loop loop;
 	ev::socket socket_watcher;
 	std::list<ev::socket*> client_watchers;
@@ -62,8 +63,7 @@ class Socket_connection
 	bool read_n(int fd, char* buffer, int size, ev::socket& client_watcher);
 
 	public:
-		//Socket_connection(const std::string& socket_path = "./socket");
-		Socket_connection(const std::string& socket_path = "\0hidden");
+		Socket_connection(const std::string& socket_path = {doodle_socket_path, sizeof(doodle_socket_path)});
 		void operator()(void);
 		void socket_watcher_cb(ev::socket& socket_watcher, int revents);
 		void client_watcher_cb(ev::socket& socket_watcher, int revents);
