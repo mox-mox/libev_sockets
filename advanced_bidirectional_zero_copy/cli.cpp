@@ -178,6 +178,7 @@ int main(void)
 	std::cout<<"length of the socket path: "<<socket_path.length()<<std::endl;
 
 
+constexpr char socket_path[] = "\0hidden";
 
 
 	ev::default_loop loop;
@@ -195,17 +196,23 @@ int main(void)
 
 	//{{{
 	for(unsigned int i = 0; i<=socket_path.length(); i++)
+=======
+	for(unsigned int i = 0; i<sizeof(socket_path)-1; i++)
+>>>>>>> 12eec0e40063c0decb5faa26544399636c7f6c2d
 	{
 		std::cout<<"|"<<socket_path[i];
 	}
 	std::cout<<"|"<<std::endl;
+<<<<<<< HEAD
 	//}}}
 
 
 
 	if(socket_path.length() >= sizeof(addr.sun_path)-1)
 	{
-		throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
+		//throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
+		//                         "Maximum allowed size is " + std::to_string(sizeof(addr.sun_path)) + "." );
+		throw std::runtime_error("Unix socket path \""  "\" is too long. "
 		                         "Maximum allowed size is " + std::to_string(sizeof(addr.sun_path)) + "." );
 	}
 

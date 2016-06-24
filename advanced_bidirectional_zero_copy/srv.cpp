@@ -25,7 +25,6 @@ Socket_connection::Socket_connection(const std::string& socket_path) : socket_pa
 		throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
 		                         "Maximum allowed size is " + std::to_string(sizeof(addr.sun_path)) + "." );
 	}
-	//std::strncpy(addr.sun_path, socket_path.c_str(), socket_path.length()+1);
 
 
 	//{{{
