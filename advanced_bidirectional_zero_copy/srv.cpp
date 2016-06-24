@@ -75,6 +75,7 @@ void Socket_connection::socket_watcher_cb(ev::socket& socket_watcher, int revent
 }
 //}}}
 
+//{{{
 bool Socket_connection::read_n(int fd, char buffer[], int size, ev::socket& client_watcher)	// Read exactly size bytes
 {
 	int read_count = 0;
@@ -98,6 +99,7 @@ bool Socket_connection::read_n(int fd, char buffer[], int size, ev::socket& clie
 	}
 	return false;
 }
+//}}}
 
 //{{{
 void Socket_connection::client_watcher_cb(ev::socket& client_watcher, int revents)

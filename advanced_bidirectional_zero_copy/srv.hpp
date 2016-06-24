@@ -9,6 +9,7 @@
 
 //{{{
 
+
 namespace ev
 {
 	struct socket : ev::io
@@ -24,8 +25,6 @@ namespace ev
 
 		int some_data;		// A data member for demonstration purposes
 		// Put any additional data here
-
-
 
 		//{{{ Template Magic to allow using a callback with signature "void socket_watcher_cb(ev::socket& socket_watcher, int revents);"
 

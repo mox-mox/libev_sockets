@@ -173,6 +173,13 @@ void socket_read_cb(ev::socket& w, int revent)
 
 int main(void)
 {
+
+	std::cout<<"sizeof(doodle_socket_path): "<<sizeof(doodle_socket_path)<<std::endl;
+	std::cout<<"length of the socket path: "<<socket_path.length()<<std::endl;
+
+
+
+
 	ev::default_loop loop;
 
 	//{{{ Standard Unix socket creation
@@ -186,6 +193,16 @@ int main(void)
 	struct sockaddr_un addr;
 	addr.sun_family = AF_UNIX;
 
+	//{{{
+	for(unsigned int i = 0; i<=socket_path.length(); i++)
+	{
+		std::cout<<"|"<<socket_path[i];
+	}
+	std::cout<<"|"<<std::endl;
+	//}}}
+
+
+
 	if(socket_path.length() >= sizeof(addr.sun_path)-1)
 	{
 		throw std::runtime_error("Unix socket path \"" + socket_path + "\" is too long. "
@@ -198,6 +215,18 @@ int main(void)
 		addr.sun_path[i] = socket_path[i]; // Need to do this in a loop, because the usual string copying functions break when there is a '\0' character in the string.
 	}
 	//}}}
+
+
+
+	//{{{
+	std::cout<<"SOCKET: ";
+	for(unsigned int i = 0; i<=socket_path.length(); i++)
+	{
+		std::cout<<"|"<<addr.sun_path[i];
+	}
+	std::cout<<"|"<<std::endl;
+	//}}}
+
 
 	if( connect(socket_watcher_write.fd, static_cast<struct sockaddr*>(static_cast<void*>(&addr)), socket_path.length()+1) == -1 )
 	{
